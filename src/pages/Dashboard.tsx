@@ -12,12 +12,18 @@ export default function Dashboard() {
 
   const leadColumns = [
     { header: 'Name', accessor: 'name' as const },
-    { header: 'Email', accessor: 'email' as const },
+    { header: 'Phone', accessor: 'phone' as const },
     { header: 'Source', accessor: 'source' as const },
     {
       header: 'Status',
       accessor: (lead: typeof mockLeads[0]) => (
         <StatusBadge status={lead.status} />
+      ),
+    },
+    {
+      header: 'Follow Up',
+      accessor: (lead: typeof mockLeads[0]) => (
+        <StatusBadge status={lead.followUp} />
       ),
     },
   ];
@@ -29,8 +35,9 @@ export default function Dashboard() {
     {
       header: 'Price',
       accessor: (unit: typeof mockUnits[0]) =>
-        `AED ${unit.price.toLocaleString()}`,
+        `EGP ${unit.price.toLocaleString()}`,
     },
+    { header: 'Owner Phone', accessor: 'ownerPhone' as const },
     {
       header: 'Status',
       accessor: (unit: typeof mockUnits[0]) => (

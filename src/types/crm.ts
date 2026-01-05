@@ -4,6 +4,7 @@ export interface Lead {
   email: string;
   phone: string;
   status: 'new' | 'contacted' | 'qualified' | 'negotiation' | 'closed';
+  followUp: 'pending' | 'scheduled' | 'completed' | 'no-answer' | 'callback';
   source: string;
   createdAt: Date;
 }
