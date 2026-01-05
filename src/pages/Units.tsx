@@ -22,21 +22,26 @@ import {
 import { mockUnits, mockProjects } from '@/data/mockData';
 import { Unit } from '@/types/crm';
 import { useToast } from '@/hooks/use-toast';
+import { useConfig } from '@/contexts/ConfigContext';
 
 export default function Units() {
   const [units, setUnits] = useState<Unit[]>(mockUnits);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { unitTypes } = useConfig();
+  const { toast } = useToast();
+
   const [formData, setFormData] = useState({
     projectId: '',
     unitNumber: '',
-    type: '1br' as Unit['type'],
+    type: '',
     size: '',
     price: '',
     ownerName: '',
-    ownerPhone: '',
+    ownerPhone: '+20 ',
     status: 'available' as Unit['status'],
   });
-  const { toast } = useToast();
+
+  const activeUnitTypes = unitTypes.filter((t) => t.isActive);
 
   const columns = [
     { header: 'Unit #', accessor: 'unitNumber' as const },
@@ -82,11 +87,11 @@ export default function Units() {
     setFormData({
       projectId: '',
       unitNumber: '',
-      type: '1br',
+      type: '',
       size: '',
       price: '',
       ownerName: '',
-      ownerPhone: '',
+      ownerPhone: '+20 ',
       status: 'available',
     });
     toast({
@@ -157,19 +162,18 @@ export default function Units() {
                 <Select
                   value={formData.type}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, type: value as Unit['type'] })
+                    setFormData({ ...formData, type: value })
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="studio">Studio</SelectItem>
-                    <SelectItem value="1br">1 BR</SelectItem>
-                    <SelectItem value="2br">2 BR</SelectItem>
-                    <SelectItem value="3br">3 BR</SelectItem>
-                    <SelectItem value="penthouse">Penthouse</SelectItem>
-                    <SelectItem value="villa">Villa</SelectItem>
+                    {activeUnitTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.label}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
