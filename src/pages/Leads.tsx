@@ -29,20 +29,25 @@ export default function Leads() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
+    phone: '+20 ',
     source: '',
     status: 'new' as Lead['status'],
+    followUp: 'pending' as Lead['followUp'],
   });
   const { toast } = useToast();
 
   const columns = [
     { header: 'Name', accessor: 'name' as const },
-    { header: 'Email', accessor: 'email' as const },
     { header: 'Phone', accessor: 'phone' as const },
+    { header: 'Email', accessor: 'email' as const },
     { header: 'Source', accessor: 'source' as const },
     {
       header: 'Status',
       accessor: (lead: Lead) => <StatusBadge status={lead.status} />,
+    },
+    {
+      header: 'Follow Up',
+      accessor: (lead: Lead) => <StatusBadge status={lead.followUp} />,
     },
     {
       header: 'Created',
@@ -60,7 +65,7 @@ export default function Leads() {
     };
     setLeads([newLead, ...leads]);
     setIsDialogOpen(false);
-    setFormData({ name: '', email: '', phone: '', source: '', status: 'new' });
+    setFormData({ name: '', email: '', phone: '+20 ', source: '', status: 'new', followUp: 'pending' });
     toast({
       title: 'Lead Added',
       description: `${formData.name} has been added to your leads.`,
@@ -119,20 +124,32 @@ export default function Leads() {
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
                 }
+                placeholder="+20 1XX XXX XXXX"
                 required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="source">Source</Label>
-              <Input
-                id="source"
+              <Select
                 value={formData.source}
-                onChange={(e) =>
-                  setFormData({ ...formData, source: e.target.value })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, source: value })
                 }
-                placeholder="e.g., Website, Referral"
-                required
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Facebook">Facebook</SelectItem>
+                  <SelectItem value="Instagram">Instagram</SelectItem>
+                  <SelectItem value="Website">Website</SelectItem>
+                  <SelectItem value="Referral">Referral</SelectItem>
+                  <SelectItem value="Property Exhibition">Property Exhibition</SelectItem>
+                  <SelectItem value="Walk-in">Walk-in</SelectItem>
+                  <SelectItem value="OLX">OLX</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
@@ -151,6 +168,26 @@ export default function Leads() {
                   <SelectItem value="qualified">Qualified</SelectItem>
                   <SelectItem value="negotiation">Negotiation</SelectItem>
                   <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="followUp">Follow Up</Label>
+              <Select
+                value={formData.followUp}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, followUp: value as Lead['followUp'] })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="no-answer">No Answer</SelectItem>
+                  <SelectItem value="callback">Callback</SelectItem>
                 </SelectContent>
               </Select>
             </div>

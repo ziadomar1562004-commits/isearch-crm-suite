@@ -46,14 +46,15 @@ export default function Units() {
       accessor: (unit: Unit) => unit.type.toUpperCase(),
     },
     {
-      header: 'Size (sqft)',
+      header: 'Size (m²)',
       accessor: (unit: Unit) => unit.size.toLocaleString(),
     },
     {
-      header: 'Price (AED)',
+      header: 'Price (EGP)',
       accessor: (unit: Unit) => unit.price.toLocaleString(),
     },
     { header: 'Owner', accessor: 'ownerName' as const },
+    { header: 'Owner Phone', accessor: 'ownerPhone' as const },
     {
       header: 'Status',
       accessor: (unit: Unit) => <StatusBadge status={unit.status} />,
@@ -173,7 +174,7 @@ export default function Units() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="size">Size (sqft)</Label>
+                <Label htmlFor="size">Size (m²)</Label>
                 <Input
                   id="size"
                   type="number"
@@ -185,7 +186,7 @@ export default function Units() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">Price (AED)</Label>
+                <Label htmlFor="price">Price (EGP)</Label>
                 <Input
                   id="price"
                   type="number"
@@ -218,6 +219,7 @@ export default function Units() {
                   onChange={(e) =>
                     setFormData({ ...formData, ownerPhone: e.target.value })
                   }
+                  placeholder="+20 1XX XXX XXXX"
                   required
                 />
               </div>
