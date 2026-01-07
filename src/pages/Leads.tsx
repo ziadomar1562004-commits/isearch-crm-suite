@@ -19,15 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockLeads } from '@/data/mockData';
 import { Lead } from '@/types/crm';
 import { useToast } from '@/hooks/use-toast';
 import { useConfig } from '@/contexts/ConfigContext';
+import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 
 export default function Leads() {
-  const [leads, setLeads] = useState<Lead[]>(mockLeads);
+  const { leads, areas, projects, getProjectsByArea, addLead } = useData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { leadSources, salesReps } = useConfig();
   const { currentUser, isAdmin } = useAuth();
@@ -38,6 +38,8 @@ export default function Leads() {
     email: '',
     phone: '+20 ',
     source: '',
+    areaId: '',
+    projectId: '',
     status: 'new' as Lead['status'],
     followUp: 'pending' as Lead['followUp'],
     assignedTo: '',
@@ -49,10 +51,13 @@ export default function Leads() {
     : leads.filter((lead) => lead.assignedTo === currentUser?.id || !lead.assignedTo);
 
   const activeSalesReps = salesReps.filter((rep) => rep.isActive);
+  const availableProjects = formData.areaId ? getProjectsByArea(formData.areaId) : projects;
 
   const columns = [
     { header: 'Name', accessor: 'name' as const },
     { header: 'Phone', accessor: 'phone' as const },
+    { header: 'Area', accessor: 'areaName' as const },
+    { header: 'Project', accessor: 'projectName' as const },
     { header: 'Source', accessor: 'source' as const },
     {
       header: 'Assigned To',
@@ -73,34 +78,36 @@ export default function Leads() {
       header: 'Follow Up',
       accessor: (lead: Lead) => <StatusBadge status={lead.followUp} />,
     },
-    {
-      header: 'Created',
-      accessor: (lead: Lead) => new Date(lead.createdAt).toLocaleDateString(),
-    },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const assignedRep = salesReps.find((r) => r.id === formData.assignedTo);
-    const newLead: Lead = {
-      id: Date.now().toString(),
+    const selectedArea = areas.find((a) => a.id === formData.areaId);
+    const selectedProject = projects.find((p) => p.id === formData.projectId);
+    
+    addLead({
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
       source: formData.source,
+      areaId: formData.areaId || undefined,
+      areaName: selectedArea?.name,
+      projectId: formData.projectId || undefined,
+      projectName: selectedProject?.name,
       status: formData.status,
       followUp: formData.followUp,
       assignedTo: formData.assignedTo || undefined,
       assignedToName: assignedRep?.name,
-      createdAt: new Date(),
-    };
-    setLeads([newLead, ...leads]);
+    });
     setIsDialogOpen(false);
     setFormData({
       name: '',
       email: '',
       phone: '+20 ',
       source: '',
+      areaId: '',
+      projectId: '',
       status: 'new',
       followUp: 'pending',
       assignedTo: '',
@@ -173,6 +180,49 @@ export default function Leads() {
                 }
                 required
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="area">Interested Area</Label>
+                <Select
+                  value={formData.areaId}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, areaId: value, projectId: '' })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select area" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {areas.map((area) => (
+                      <SelectItem key={area.id} value={area.id}>
+                        {area.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="project">Interested Project</Label>
+                <Select
+                  value={formData.projectId}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, projectId: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableProjects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

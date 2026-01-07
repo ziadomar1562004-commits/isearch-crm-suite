@@ -19,17 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockProjects } from '@/data/mockData';
 import { Project } from '@/types/crm';
 import { useToast } from '@/hooks/use-toast';
+import { useData } from '@/contexts/DataContext';
 
 export default function Projects() {
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  const { projects, areas, addProject } = useData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     developer: '',
-    location: '',
+    areaId: '',
     totalUnits: '',
     status: 'upcoming' as Project['status'],
   });
@@ -38,7 +38,7 @@ export default function Projects() {
   const columns = [
     { header: 'Name', accessor: 'name' as const },
     { header: 'Developer', accessor: 'developer' as const },
-    { header: 'Location', accessor: 'location' as const },
+    { header: 'Area', accessor: 'areaName' as const },
     {
       header: 'Total Units',
       accessor: (project: Project) => project.totalUnits.toLocaleString(),
@@ -56,21 +56,18 @@ export default function Projects() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newProject: Project = {
-      id: Date.now().toString(),
+    addProject({
       name: formData.name,
       developer: formData.developer,
-      location: formData.location,
+      areaId: formData.areaId,
       totalUnits: parseInt(formData.totalUnits),
       status: formData.status,
-      createdAt: new Date(),
-    };
-    setProjects([newProject, ...projects]);
+    });
     setIsDialogOpen(false);
     setFormData({
       name: '',
       developer: '',
-      location: '',
+      areaId: '',
       totalUnits: '',
       status: 'upcoming',
     });
@@ -124,15 +121,24 @@ export default function Projects() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
+              <Label htmlFor="area">Area</Label>
+              <Select
+                value={formData.areaId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, areaId: value })
                 }
-                required
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select area" />
+                </SelectTrigger>
+                <SelectContent>
+                  {areas.map((area) => (
+                    <SelectItem key={area.id} value={area.id}>
+                      {area.name} - {area.city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="totalUnits">Total Units</Label>

@@ -18,7 +18,11 @@ export interface Lead {
   status: 'new' | 'contacted' | 'qualified' | 'negotiation' | 'closed';
   followUp: 'pending' | 'scheduled' | 'completed' | 'no-answer' | 'callback';
   source: string;
-  assignedTo?: string; // Sales rep ID
+  areaId?: string;
+  areaName?: string;
+  projectId?: string;
+  projectName?: string;
+  assignedTo?: string;
   assignedToName?: string;
   createdAt: Date;
 }
@@ -27,7 +31,8 @@ export interface Project {
   id: string;
   name: string;
   developer: string;
-  location: string;
+  areaId: string;
+  areaName: string;
   totalUnits: number;
   status: 'upcoming' | 'ongoing' | 'completed';
   createdAt: Date;
@@ -37,7 +42,6 @@ export interface Area {
   id: string;
   name: string;
   city: string;
-  projectCount: number;
   createdAt: Date;
 }
 
@@ -45,17 +49,19 @@ export interface Unit {
   id: string;
   projectId: string;
   projectName: string;
+  areaId: string;
+  areaName: string;
   unitNumber: string;
   type: string;
   size: number;
   price: number;
   ownerName: string;
   ownerPhone: string;
+  photos: string[];
   status: 'available' | 'reserved' | 'sold';
   createdAt: Date;
 }
 
-// Configurable options
 export interface ConfigOption {
   id: string;
   label: string;
@@ -65,4 +71,13 @@ export interface ConfigOption {
 export interface CRMConfig {
   leadSources: ConfigOption[];
   unitTypes: ConfigOption[];
+  salesReps: User[];
+}
+
+export interface AreaInsight {
+  areaId: string;
+  areaName: string;
+  leadsCount: number;
+  projectsCount: number;
+  unitsCount: number;
 }
