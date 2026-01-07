@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ConfigProvider } from "./contexts/ConfigContext";
+import { DataProvider } from "./contexts/DataContext";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import Projects from "./pages/Projects";
@@ -96,7 +97,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ConfigProvider>
-            <AppRoutes />
+            <DataProvider>
+              <AppRoutes />
+            </DataProvider>
           </ConfigProvider>
         </AuthProvider>
       </BrowserRouter>

@@ -11,12 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { mockAreas } from '@/data/mockData';
 import { Area } from '@/types/crm';
 import { useToast } from '@/hooks/use-toast';
+import { useData } from '@/contexts/DataContext';
 
 export default function Areas() {
-  const [areas, setAreas] = useState<Area[]>(mockAreas);
+  const { areas, areaInsights, addArea } = useData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -24,12 +24,26 @@ export default function Areas() {
   });
   const { toast } = useToast();
 
+  // Merge area data with insights for display
+  const areasWithStats = areas.map(area => {
+    const insight = areaInsights.find(i => i.areaId === area.id);
+    return {
+      ...area,
+      projectCount: insight?.projectsCount || 0,
+      leadsCount: insight?.leadsCount || 0,
+    };
+  });
+
   const columns = [
     { header: 'Area Name', accessor: 'name' as const },
     { header: 'City', accessor: 'city' as const },
     {
       header: 'Projects',
-      accessor: (area: Area) => area.projectCount,
+      accessor: (area: typeof areasWithStats[0]) => area.projectCount,
+    },
+    {
+      header: 'Leads',
+      accessor: (area: typeof areasWithStats[0]) => area.leadsCount,
     },
     {
       header: 'Created',
@@ -40,14 +54,10 @@ export default function Areas() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newArea: Area = {
-      id: Date.now().toString(),
+    addArea({
       name: formData.name,
       city: formData.city,
-      projectCount: 0,
-      createdAt: new Date(),
-    };
-    setAreas([newArea, ...areas]);
+    });
     setIsDialogOpen(false);
     setFormData({ name: '', city: '' });
     toast({
@@ -68,7 +78,7 @@ export default function Areas() {
       />
 
       <div className="animate-fade-in">
-        <DataTable columns={columns} data={areas} />
+        <DataTable columns={columns} data={areasWithStats} />
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -85,7 +95,7 @@ export default function Areas() {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="e.g., Business Bay"
+                placeholder="e.g., New Cairo"
                 required
               />
             </div>
@@ -97,7 +107,7 @@ export default function Areas() {
                 onChange={(e) =>
                   setFormData({ ...formData, city: e.target.value })
                 }
-                placeholder="e.g., Dubai"
+                placeholder="e.g., Cairo"
                 required
               />
             </div>
