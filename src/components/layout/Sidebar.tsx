@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   LayoutDashboard,
   Users,
@@ -12,34 +13,43 @@ import {
   LogOut,
   Shield,
   User,
+  Languages,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Leads', href: '/leads', icon: Users },
-  { name: 'Projects', href: '/projects', icon: Building2 },
-  { name: 'Areas', href: '/areas', icon: MapPin },
-  { name: 'Units', href: '/units', icon: Home },
-];
-
-const adminNavigation = [
-  { name: 'Settings', href: '/settings', icon: Settings },
-];
 
 export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser, isAdmin, logout } = useAuth();
+  const { language, setLanguage, t, isRTL } = useLanguage();
+
+  const navigation = [
+    { name: t('nav.dashboard'), href: '/', icon: LayoutDashboard },
+    { name: t('nav.leads'), href: '/leads', icon: Users },
+    { name: t('nav.projects'), href: '/projects', icon: Building2 },
+    { name: t('nav.areas'), href: '/areas', icon: MapPin },
+    { name: t('nav.units'), href: '/units', icon: Home },
+  ];
+
+  const adminNavigation = [
+    { name: t('nav.settings'), href: '/settings', icon: Settings },
+  ];
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'ar' : 'en');
+  };
+
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar">
+    <aside className={cn(
+      "fixed inset-y-0 z-50 flex w-64 flex-col bg-sidebar",
+      isRTL ? "right-0" : "left-0"
+    )}>
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
@@ -73,10 +83,10 @@ export function Sidebar() {
                 {isAdmin ? (
                   <>
                     <Shield className="mr-1 h-3 w-3" />
-                    Admin
+                    {language === 'ar' ? 'مدير' : 'Admin'}
                   </>
                 ) : (
-                  'Sales Rep'
+                  language === 'ar' ? 'مندوب مبيعات' : 'Sales Rep'
                 )}
               </Badge>
             </div>
@@ -90,7 +100,7 @@ export function Sidebar() {
           const isActive = location.pathname === item.href;
           return (
             <Link
-              key={item.name}
+              key={item.href}
               to={item.href}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
@@ -110,13 +120,13 @@ export function Sidebar() {
           <>
             <div className="my-4 border-t border-sidebar-border" />
             <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-              Admin
+              {language === 'ar' ? 'المدير' : 'Admin'}
             </p>
             {adminNavigation.map((item) => {
               const isActive = location.pathname === item.href;
               return (
                 <Link
-                  key={item.name}
+                  key={item.href}
                   to={item.href}
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
@@ -135,14 +145,22 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-sidebar-border p-4">
+      <div className="border-t border-sidebar-border p-4 space-y-2">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          onClick={toggleLanguage}
+        >
+          <Languages className="h-4 w-4" />
+          {language === 'en' ? 'العربية' : 'English'}
+        </Button>
         <Button
           variant="ghost"
           className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
           onClick={handleLogout}
         >
           <LogOut className="h-4 w-4" />
-          Sign Out
+          {language === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}
         </Button>
       </div>
     </aside>
