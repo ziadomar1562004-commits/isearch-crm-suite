@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ConfigProvider } from "./contexts/ConfigContext";
 import { DataProvider } from "./contexts/DataContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
 import Projects from "./pages/Projects";
@@ -98,11 +99,13 @@ const App = () => (
       <BrowserRouter>
         <LanguageProvider>
           <AuthProvider>
-            <ConfigProvider>
-              <DataProvider>
-                <AppRoutes />
-              </DataProvider>
-            </ConfigProvider>
+            <NotificationProvider>
+              <ConfigProvider>
+                <DataProvider>
+                  <AppRoutes />
+                </DataProvider>
+              </ConfigProvider>
+            </NotificationProvider>
           </AuthProvider>
         </LanguageProvider>
       </BrowserRouter>
