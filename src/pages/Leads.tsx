@@ -24,7 +24,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useConfig } from '@/contexts/ConfigContext';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { Badge } from '@/components/ui/badge';
+import { MessageCircle } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function Leads() {
   const { leads, areas, projects, getProjectsByArea, addLead } = useData();
@@ -32,6 +39,7 @@ export default function Leads() {
   const { leadSources, salesReps } = useConfig();
   const { currentUser, isAdmin } = useAuth();
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -52,6 +60,12 @@ export default function Leads() {
 
   const activeSalesReps = salesReps.filter((rep) => rep.isActive);
   const availableProjects = formData.areaId ? getProjectsByArea(formData.areaId) : projects;
+
+  const handleWhatsAppClick = (phone: string) => {
+    // Clean phone number and format for WhatsApp
+    const cleanPhone = phone.replace(/\s+/g, '').replace(/^\+/, '');
+    window.open(`https://wa.me/${cleanPhone}`, '_blank');
+  };
 
   const columns = [
     { header: 'Name', accessor: 'name' as const },
@@ -78,6 +92,29 @@ export default function Leads() {
       header: 'Follow Up',
       accessor: (lead: Lead) => <StatusBadge status={lead.followUp} />,
     },
+    {
+      header: 'Contact',
+      accessor: (lead: Lead) => (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleWhatsAppClick(lead.phone);
+              }}
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Contact via WhatsApp</p>
+          </TooltipContent>
+        </Tooltip>
+      ),
+    },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -100,6 +137,16 @@ export default function Leads() {
       assignedTo: formData.assignedTo || undefined,
       assignedToName: assignedRep?.name,
     });
+
+    // Send notification if lead is assigned to a sales rep
+    if (formData.assignedTo && assignedRep) {
+      addNotification({
+        title: 'New Lead Assigned',
+        message: `${formData.name} has been assigned to you. Contact: ${formData.phone}`,
+        type: 'lead_assigned',
+      });
+    }
+
     setIsDialogOpen(false);
     setFormData({
       name: '',
