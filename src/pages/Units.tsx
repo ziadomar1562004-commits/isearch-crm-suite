@@ -23,12 +23,19 @@ import { Unit } from '@/types/crm';
 import { useToast } from '@/hooks/use-toast';
 import { useConfig } from '@/contexts/ConfigContext';
 import { useData } from '@/contexts/DataContext';
-import { ImagePlus, X, Image } from 'lucide-react';
+import { ImagePlus, X, Image, MapPin } from 'lucide-react';
+import { UnitMap } from '@/components/UnitMap';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function Units() {
-  const { units, projects, areas, addUnit } = useData();
+  const { units, projects, areas, addUnit, updateUnit } = useData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPhotosDialogOpen, setIsPhotosDialogOpen] = useState(false);
+  const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const { unitTypes } = useConfig();
   const { toast } = useToast();
@@ -44,9 +51,29 @@ export default function Units() {
     ownerPhone: '+20 ',
     status: 'available' as Unit['status'],
     photos: [] as string[],
+    location: undefined as { lat: number; lng: number } | undefined,
   });
 
   const activeUnitTypes = unitTypes.filter((t) => t.isActive);
+
+  const handleSetLocation = (unit: Unit) => {
+    setSelectedUnit(unit);
+    setIsMapDialogOpen(true);
+  };
+
+  const handleLocationSave = (location: { lat: number; lng: number } | undefined) => {
+    if (selectedUnit) {
+      updateUnit(selectedUnit.id, { location });
+      toast({
+        title: location ? 'Location Set' : 'Location Removed',
+        description: location 
+          ? `Location set for unit ${selectedUnit.unitNumber}`
+          : `Location removed from unit ${selectedUnit.unitNumber}`,
+      });
+    }
+    setIsMapDialogOpen(false);
+    setSelectedUnit(null);
+  };
 
   const columns = [
     { header: 'Unit #', accessor: 'unitNumber' as const },
@@ -82,6 +109,29 @@ export default function Units() {
           <Image className="h-4 w-4" />
           {unit.photos.length}
         </Button>
+      ),
+    },
+    {
+      header: 'Location',
+      accessor: (unit: Unit) => (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-8 w-8 ${unit.location ? 'text-primary' : 'text-muted-foreground'}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSetLocation(unit);
+              }}
+            >
+              <MapPin className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{unit.location ? 'View/Edit Location' : 'Set Location'}</p>
+          </TooltipContent>
+        </Tooltip>
       ),
     },
     {
@@ -126,6 +176,7 @@ export default function Units() {
       ownerPhone: formData.ownerPhone,
       status: formData.status,
       photos: formData.photos,
+      location: formData.location,
     });
     setIsDialogOpen(false);
     setFormData({
@@ -138,6 +189,7 @@ export default function Units() {
       ownerPhone: '+20 ',
       status: 'available',
       photos: [],
+      location: undefined,
     });
     toast({
       title: 'Unit Added',
@@ -294,6 +346,17 @@ export default function Units() {
               </Select>
             </div>
 
+            {/* Location Map Section */}
+            <div className="space-y-2">
+              <Label>Unit Location</Label>
+              <UnitMap
+                location={formData.location}
+                onLocationChange={(location) =>
+                  setFormData({ ...formData, location })
+                }
+              />
+            </div>
+
             {/* Photos Section */}
             <div className="space-y-2">
               <Label>Unit Photos</Label>
@@ -369,6 +432,35 @@ export default function Units() {
                 />
               ))
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Location Map Dialog */}
+      <Dialog open={isMapDialogOpen} onOpenChange={setIsMapDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Unit Location - {selectedUnit?.unitNumber}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <UnitMap
+              location={selectedUnit?.location}
+              onLocationChange={handleLocationSave}
+              unitName={selectedUnit?.unitNumber}
+            />
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsMapDialogOpen(false);
+                  setSelectedUnit(null);
+                }}
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

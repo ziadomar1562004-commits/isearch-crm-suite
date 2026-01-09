@@ -26,7 +26,7 @@ import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Edit2 } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -34,10 +34,12 @@ import {
 } from '@/components/ui/tooltip';
 
 export default function Leads() {
-  const { leads, areas, projects, getProjectsByArea, addLead } = useData();
+  const { leads, areas, projects, getProjectsByArea, addLead, updateLead } = useData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const { leadSources, salesReps } = useConfig();
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, isAdmin, isSales } = useAuth();
   const { toast } = useToast();
   const { addNotification } = useNotifications();
 
@@ -53,6 +55,11 @@ export default function Leads() {
     assignedTo: '',
   });
 
+  const [statusFormData, setStatusFormData] = useState({
+    status: 'new' as Lead['status'],
+    followUp: 'pending' as Lead['followUp'],
+  });
+
   // Filter leads based on user role
   const filteredLeads = isAdmin
     ? leads
@@ -65,6 +72,45 @@ export default function Leads() {
     // Clean phone number and format for WhatsApp
     const cleanPhone = phone.replace(/\s+/g, '').replace(/^\+/, '');
     window.open(`https://wa.me/${cleanPhone}`, '_blank');
+  };
+
+  const handleEditStatus = (lead: Lead) => {
+    setSelectedLead(lead);
+    setStatusFormData({
+      status: lead.status,
+      followUp: lead.followUp,
+    });
+    setIsStatusDialogOpen(true);
+  };
+
+  const handleStatusSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLead) return;
+
+    const previousStatus = selectedLead.status;
+    const previousFollowUp = selectedLead.followUp;
+
+    updateLead(selectedLead.id, {
+      status: statusFormData.status,
+      followUp: statusFormData.followUp,
+    });
+
+    // Send notification when status changes to follow-up scheduled
+    if (statusFormData.followUp === 'scheduled' && previousFollowUp !== 'scheduled') {
+      addNotification({
+        title: 'Follow Up Scheduled',
+        message: `Lead ${selectedLead.name} has been moved to follow up.`,
+        type: 'follow_up',
+        leadId: selectedLead.id,
+      });
+    }
+
+    setIsStatusDialogOpen(false);
+    setSelectedLead(null);
+    toast({
+      title: 'Lead Updated',
+      description: `Status updated for ${selectedLead.name}.`,
+    });
   };
 
   const columns = [
@@ -93,26 +139,46 @@ export default function Leads() {
       accessor: (lead: Lead) => <StatusBadge status={lead.followUp} />,
     },
     {
-      header: 'Contact',
+      header: 'Actions',
       accessor: (lead: Lead) => (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleWhatsAppClick(lead.phone);
-              }}
-            >
-              <MessageCircle className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Contact via WhatsApp</p>
-          </TooltipContent>
-        </Tooltip>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleWhatsAppClick(lead.phone);
+                }}
+              >
+                <MessageCircle className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Contact via WhatsApp</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditStatus(lead);
+                }}
+              >
+                <Edit2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Change Status</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       ),
     },
   ];
@@ -174,16 +240,17 @@ export default function Leads() {
             ? 'Manage all sales leads and prospects'
             : 'View and manage your assigned leads'
         }
-        action={{
+        action={isAdmin ? {
           label: 'Add Lead',
           onClick: () => setIsDialogOpen(true),
-        }}
+        } : undefined}
       />
 
       <div className="animate-fade-in">
         <DataTable columns={columns} data={filteredLeads} />
       </div>
 
+      {/* Add Lead Dialog - Only for Admin */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -372,6 +439,79 @@ export default function Leads() {
                 Cancel
               </Button>
               <Button type="submit">Add Lead</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Status Dialog - For all users */}
+      <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Lead Status</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleStatusSubmit} className="space-y-4">
+            {selectedLead && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="font-medium">{selectedLead.name}</p>
+                <p className="text-sm text-muted-foreground">{selectedLead.phone}</p>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="editStatus">Status</Label>
+              <Select
+                value={statusFormData.status}
+                onValueChange={(value) =>
+                  setStatusFormData({ ...statusFormData, status: value as Lead['status'] })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="contacted">Contacted</SelectItem>
+                  <SelectItem value="qualified">Qualified</SelectItem>
+                  <SelectItem value="negotiation">Negotiation</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editFollowUp">Follow Up</Label>
+              <Select
+                value={statusFormData.followUp}
+                onValueChange={(value) =>
+                  setStatusFormData({
+                    ...statusFormData,
+                    followUp: value as Lead['followUp'],
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="no-answer">No Answer</SelectItem>
+                  <SelectItem value="callback">Callback</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsStatusDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Update Status</Button>
             </div>
           </form>
         </DialogContent>

@@ -4,17 +4,40 @@ import { StatCard } from '@/components/ui/stat-card';
 import { DataTable } from '@/components/ui/data-table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, MapPin, Home, TrendingUp } from 'lucide-react';
+import { Users, Building2, MapPin, Home, TrendingUp, Calendar, MessageCircle } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Lead } from '@/types/crm';
 
 export default function Dashboard() {
   const { leads, projects, areas, units, areaInsights } = useData();
+  const { currentUser, isAdmin } = useAuth();
   
-  const recentLeads = leads.slice(0, 5);
+  // Filter leads based on role
+  const userLeads = isAdmin 
+    ? leads 
+    : leads.filter(lead => lead.assignedTo === currentUser?.id);
+  
+  // Get follow-up leads (scheduled follow-ups)
+  const followUpLeads = userLeads.filter(lead => lead.followUp === 'scheduled');
+  
+  const recentLeads = userLeads.slice(0, 5);
   const recentUnits = units.slice(0, 5);
   const topAreas = areaInsights.slice(0, 5);
   const maxLeads = Math.max(...topAreas.map(a => a.leadsCount), 1);
+
+  const handleWhatsAppClick = (phone: string) => {
+    const cleanPhone = phone.replace(/\s+/g, '').replace(/^\+/, '');
+    window.open(`https://wa.me/${cleanPhone}`, '_blank');
+  };
 
   const leadColumns = [
     { header: 'Name', accessor: 'name' as const },
@@ -31,6 +54,50 @@ export default function Dashboard() {
       header: 'Follow Up',
       accessor: (lead: typeof leads[0]) => (
         <StatusBadge status={lead.followUp} />
+      ),
+    },
+  ];
+
+  const followUpColumns = [
+    { header: 'Name', accessor: 'name' as const },
+    { header: 'Phone', accessor: 'phone' as const },
+    { header: 'Project', accessor: 'projectName' as const },
+    {
+      header: 'Assigned To',
+      accessor: (lead: Lead) =>
+        lead.assignedToName ? (
+          <Badge variant="outline" className="font-normal">
+            {lead.assignedToName}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground text-xs">Unassigned</span>
+        ),
+    },
+    {
+      header: 'Status',
+      accessor: (lead: Lead) => <StatusBadge status={lead.status} />,
+    },
+    {
+      header: 'Contact',
+      accessor: (lead: Lead) => (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleWhatsAppClick(lead.phone);
+              }}
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Contact via WhatsApp</p>
+          </TooltipContent>
+        </Tooltip>
       ),
     },
   ];
@@ -64,9 +131,15 @@ export default function Dashboard() {
       <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Leads"
-          value={leads.length}
+          value={userLeads.length}
           icon={Users}
           trend={{ value: 12, isPositive: true }}
+        />
+        <StatCard
+          title="Follow Ups"
+          value={followUpLeads.length}
+          icon={Calendar}
+          trend={{ value: followUpLeads.length > 0 ? 5 : 0, isPositive: true }}
         />
         <StatCard
           title="Active Projects"
@@ -75,17 +148,27 @@ export default function Dashboard() {
           trend={{ value: 5, isPositive: true }}
         />
         <StatCard
-          title="Areas Covered"
-          value={areas.length}
-          icon={MapPin}
-        />
-        <StatCard
           title="Available Units"
           value={units.filter((u) => u.status === 'available').length}
           icon={Home}
           trend={{ value: 8, isPositive: true }}
         />
       </div>
+
+      {/* Follow Up Section */}
+      {followUpLeads.length > 0 && (
+        <Card className="mb-8 border-l-4 border-l-warning">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-warning" />
+              Follow Up Required ({followUpLeads.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DataTable columns={followUpColumns} data={followUpLeads} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Area Insights */}
       <Card className="mb-8">
