@@ -4,6 +4,7 @@ import { User, UserRole } from '@/types/crm';
 interface AuthContextType {
   currentUser: User | null;
   isAdmin: boolean;
+  isSales: boolean;
   login: (email: string, password: string) => boolean;
   logout: () => void;
 }
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const isAdmin = currentUser?.role === 'admin';
+  const isSales = currentUser?.role === 'sales';
 
   const login = (email: string, password: string): boolean => {
     const user = demoUsers.find(
@@ -71,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, isAdmin, login, logout }}>
+    <AuthContext.Provider value={{ currentUser, isAdmin, isSales, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

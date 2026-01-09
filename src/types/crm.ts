@@ -60,6 +60,10 @@ export interface Unit {
   photos: string[];
   status: 'available' | 'reserved' | 'sold';
   createdAt: Date;
+  location?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface ConfigOption {
