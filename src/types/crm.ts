@@ -15,7 +15,7 @@ export interface Lead {
   name: string;
   email: string;
   phone: string;
-  status: 'new' | 'contacted' | 'qualified' | 'negotiation' | 'closed';
+  status: 'new' | 'contacted' | 'qualified' | 'negotiation' | 'closed' | 'archived';
   followUp: 'pending' | 'scheduled' | 'completed' | 'no-answer' | 'callback';
   source: string;
   areaId?: string;

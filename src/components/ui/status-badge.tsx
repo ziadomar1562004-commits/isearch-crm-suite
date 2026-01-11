@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 type StatusType = 
-  | 'new' | 'contacted' | 'qualified' | 'negotiation' | 'closed'
+  | 'new' | 'contacted' | 'qualified' | 'negotiation' | 'closed' | 'archived'
   | 'upcoming' | 'ongoing' | 'completed'
   | 'available' | 'reserved' | 'sold'
   | 'pending' | 'scheduled' | 'no-answer' | 'callback';
@@ -18,6 +18,7 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   qualified: { label: 'Qualified', className: 'bg-accent/10 text-accent' },
   negotiation: { label: 'Negotiation', className: 'bg-purple-500/10 text-purple-600' },
   closed: { label: 'Closed', className: 'bg-success/10 text-success' },
+  archived: { label: 'Archived', className: 'bg-gray-500/10 text-gray-600' },
   // Follow-up statuses
   pending: { label: 'Pending', className: 'bg-orange-500/10 text-orange-600' },
   scheduled: { label: 'Scheduled', className: 'bg-blue-500/10 text-blue-600' },

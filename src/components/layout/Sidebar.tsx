@@ -14,6 +14,8 @@ import {
   Shield,
   User,
   Languages,
+  Calendar,
+  Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +29,8 @@ export function Sidebar() {
   const navigation = [
     { name: t('nav.dashboard'), href: '/', icon: LayoutDashboard },
     { name: t('nav.leads'), href: '/leads', icon: Users },
+    { name: language === 'ar' ? 'المتابعة' : 'Follow Up', href: '/follow-up', icon: Calendar },
+    { name: language === 'ar' ? 'الأرشيف' : 'Archive', href: '/archive', icon: Archive },
     { name: t('nav.projects'), href: '/projects', icon: Building2 },
     { name: t('nav.areas'), href: '/areas', icon: MapPin },
     { name: t('nav.units'), href: '/units', icon: Home },

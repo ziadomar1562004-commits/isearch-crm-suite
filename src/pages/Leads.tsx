@@ -475,6 +475,7 @@ export default function Leads() {
                   <SelectItem value="qualified">Qualified</SelectItem>
                   <SelectItem value="negotiation">Negotiation</SelectItem>
                   <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
             </div>

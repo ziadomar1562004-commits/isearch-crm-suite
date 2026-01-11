@@ -10,6 +10,8 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import Dashboard from "./pages/Dashboard";
 import Leads from "./pages/Leads";
+import FollowUp from "./pages/FollowUp";
+import Archive from "./pages/Archive";
 import Projects from "./pages/Projects";
 import Areas from "./pages/Areas";
 import Units from "./pages/Units";
@@ -51,6 +53,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Leads />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/follow-up"
+        element={
+          <ProtectedRoute>
+            <FollowUp />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/archive"
+        element={
+          <ProtectedRoute>
+            <Archive />
           </ProtectedRoute>
         }
       />
