@@ -118,33 +118,36 @@ export default function Units() {
     },
     {
       header: 'Payment',
-      accessor: (unit: Unit) => (
-        <div className="flex items-center gap-1">
-          {unit.paymentPlan.type === 'cash' ? (
-            <Badge variant="outline" className="gap-1">
-              <Banknote className="h-3 w-3" />
-              Cash
-            </Badge>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge variant="secondary" className="gap-1 cursor-help">
-                  <CreditCard className="h-3 w-3" />
-                  {unit.paymentPlan.downPaymentPercent}% DP
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="text-xs space-y-1">
-                  <p>Down Payment: {unit.paymentPlan.downPaymentPercent}%</p>
-                  <p>Duration: {unit.paymentPlan.installmentYears} years</p>
-                  <p>DP Amount: EGP {Math.round((unit.price * (unit.paymentPlan.downPaymentPercent || 0)) / 100).toLocaleString()}</p>
-                  <p>Rest: EGP {Math.round(unit.price * (1 - (unit.paymentPlan.downPaymentPercent || 0) / 100)).toLocaleString()}</p>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-      ),
+      accessor: (unit: Unit) => {
+        const paymentPlan = unit.paymentPlan || { type: 'cash' as const };
+        return (
+          <div className="flex items-center gap-1">
+            {paymentPlan.type === 'cash' ? (
+              <Badge variant="outline" className="gap-1">
+                <Banknote className="h-3 w-3" />
+                Cash
+              </Badge>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="secondary" className="gap-1 cursor-help">
+                    <CreditCard className="h-3 w-3" />
+                    {paymentPlan.downPaymentPercent || 0}% DP
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-xs space-y-1">
+                    <p>Down Payment: {paymentPlan.downPaymentPercent || 0}%</p>
+                    <p>Duration: {paymentPlan.installmentYears || 0} years</p>
+                    <p>DP Amount: EGP {Math.round((unit.price * (paymentPlan.downPaymentPercent || 0)) / 100).toLocaleString()}</p>
+                    <p>Rest: EGP {Math.round(unit.price * (1 - (paymentPlan.downPaymentPercent || 0) / 100)).toLocaleString()}</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
     },
     { header: 'Owner', accessor: 'ownerName' as const },
     {
