@@ -113,6 +113,11 @@ export default function Dashboard() {
         `EGP ${unit.price.toLocaleString()}`,
     },
     {
+      header: 'Price/m²',
+      accessor: (unit: typeof units[0]) =>
+        unit.pricePerMeter ? `EGP ${unit.pricePerMeter.toLocaleString()}` : '-',
+    },
+    {
       header: 'Status',
       accessor: (unit: typeof units[0]) => (
         <StatusBadge status={unit.status} />

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -19,11 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Unit } from '@/types/crm';
+import { Unit, PaymentType } from '@/types/crm';
 import { useToast } from '@/hooks/use-toast';
 import { useConfig } from '@/contexts/ConfigContext';
 import { useData } from '@/contexts/DataContext';
-import { ImagePlus, X, Image, MapPin } from 'lucide-react';
+import { ImagePlus, X, Image, MapPin, Banknote, CreditCard } from 'lucide-react';
 import { UnitMap } from '@/components/UnitMap';
 import {
   Tooltip,
@@ -47,6 +48,9 @@ export default function Units() {
     type: '',
     size: '',
     price: '',
+    paymentType: 'cash' as PaymentType,
+    downPaymentPercent: '20',
+    installmentYears: '5',
     ownerName: '',
     ownerPhone: '+20 ',
     status: 'available' as Unit['status'],
@@ -55,6 +59,23 @@ export default function Units() {
   });
 
   const activeUnitTypes = unitTypes.filter((t) => t.isActive);
+
+  // Calculate price per meter in real-time
+  const pricePerMeter = useMemo(() => {
+    const price = parseInt(formData.price) || 0;
+    const size = parseInt(formData.size) || 0;
+    return size > 0 ? Math.round(price / size) : 0;
+  }, [formData.price, formData.size]);
+
+  // Calculate payment details for installment
+  const paymentDetails = useMemo(() => {
+    if (formData.paymentType !== 'installment') return null;
+    const totalPrice = parseInt(formData.price) || 0;
+    const downPaymentPercent = parseInt(formData.downPaymentPercent) || 0;
+    const downPayment = Math.round((totalPrice * downPaymentPercent) / 100);
+    const rest = totalPrice - downPayment;
+    return { downPayment, rest, totalPrice };
+  }, [formData.price, formData.downPaymentPercent, formData.paymentType]);
 
   const handleSetLocation = (unit: Unit) => {
     setSelectedUnit(unit);
@@ -91,8 +112,41 @@ export default function Units() {
       header: 'Price (EGP)',
       accessor: (unit: Unit) => unit.price.toLocaleString(),
     },
+    {
+      header: 'Price/m²',
+      accessor: (unit: Unit) => unit.pricePerMeter ? unit.pricePerMeter.toLocaleString() : '-',
+    },
+    {
+      header: 'Payment',
+      accessor: (unit: Unit) => (
+        <div className="flex items-center gap-1">
+          {unit.paymentPlan.type === 'cash' ? (
+            <Badge variant="outline" className="gap-1">
+              <Banknote className="h-3 w-3" />
+              Cash
+            </Badge>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="secondary" className="gap-1 cursor-help">
+                  <CreditCard className="h-3 w-3" />
+                  {unit.paymentPlan.downPaymentPercent}% DP
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="text-xs space-y-1">
+                  <p>Down Payment: {unit.paymentPlan.downPaymentPercent}%</p>
+                  <p>Duration: {unit.paymentPlan.installmentYears} years</p>
+                  <p>DP Amount: EGP {Math.round((unit.price * (unit.paymentPlan.downPaymentPercent || 0)) / 100).toLocaleString()}</p>
+                  <p>Rest: EGP {Math.round(unit.price * (1 - (unit.paymentPlan.downPaymentPercent || 0) / 100)).toLocaleString()}</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      ),
+    },
     { header: 'Owner', accessor: 'ownerName' as const },
-    { header: 'Owner Phone', accessor: 'ownerPhone' as const },
     {
       header: 'Photos',
       accessor: (unit: Unit) => (
@@ -172,6 +226,13 @@ export default function Units() {
       type: formData.type,
       size: parseInt(formData.size),
       price: parseInt(formData.price),
+      paymentPlan: formData.paymentType === 'cash' 
+        ? { type: 'cash' }
+        : { 
+            type: 'installment', 
+            downPaymentPercent: parseInt(formData.downPaymentPercent),
+            installmentYears: parseInt(formData.installmentYears),
+          },
       ownerName: formData.ownerName,
       ownerPhone: formData.ownerPhone,
       status: formData.status,
@@ -185,6 +246,9 @@ export default function Units() {
       type: '',
       size: '',
       price: '',
+      paymentType: 'cash',
+      downPaymentPercent: '20',
+      installmentYears: '5',
       ownerName: '',
       ownerPhone: '+20 ',
       status: 'available',
@@ -288,7 +352,7 @@ export default function Units() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">Price (EGP)</Label>
+                <Label htmlFor="price">Total Price (EGP)</Label>
                 <Input
                   id="price"
                   type="number"
@@ -299,6 +363,105 @@ export default function Units() {
                   required
                 />
               </div>
+            </div>
+
+            {/* Price per meter display */}
+            {pricePerMeter > 0 && (
+              <div className="rounded-lg bg-muted/50 p-3 text-sm">
+                <span className="text-muted-foreground">Price per m²: </span>
+                <span className="font-semibold text-foreground">
+                  EGP {pricePerMeter.toLocaleString()}
+                </span>
+              </div>
+            )}
+
+            {/* Payment Plan Section */}
+            <div className="space-y-4 rounded-lg border p-4">
+              <div className="space-y-2">
+                <Label>Payment Type</Label>
+                <Select
+                  value={formData.paymentType}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, paymentType: value as PaymentType })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">
+                      <div className="flex items-center gap-2">
+                        <Banknote className="h-4 w-4" />
+                        Cash
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="installment">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        Installment
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.paymentType === 'installment' && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="downPayment">Down Payment (%)</Label>
+                      <Input
+                        id="downPayment"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={formData.downPaymentPercent}
+                        onChange={(e) =>
+                          setFormData({ ...formData, downPaymentPercent: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="years">Years</Label>
+                      <Input
+                        id="years"
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={formData.installmentYears}
+                        onChange={(e) =>
+                          setFormData({ ...formData, installmentYears: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {paymentDetails && (
+                    <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/50 p-3 text-sm">
+                      <div>
+                        <span className="text-muted-foreground block">Down Payment</span>
+                        <span className="font-semibold text-foreground">
+                          EGP {paymentDetails.downPayment.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block">Rest Amount</span>
+                        <span className="font-semibold text-foreground">
+                          EGP {paymentDetails.rest.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block">Total Price</span>
+                        <span className="font-semibold text-foreground">
+                          EGP {paymentDetails.totalPrice.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
