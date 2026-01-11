@@ -24,7 +24,7 @@ interface DataContextType {
   deleteArea: (id: string) => void;
   
   // Unit actions
-  addUnit: (unit: Omit<Unit, 'id' | 'createdAt' | 'areaId' | 'areaName' | 'projectName'> & { projectId: string }) => void;
+  addUnit: (unit: Omit<Unit, 'id' | 'createdAt' | 'areaId' | 'areaName' | 'projectName' | 'pricePerMeter'> & { projectId: string }) => void;
   updateUnit: (id: string, unit: Partial<Unit>) => void;
   deleteUnit: (id: string) => void;
   
@@ -63,11 +63,11 @@ const initialLeads: Lead[] = [
 ];
 
 const initialUnits: Unit[] = [
-  { id: '1', projectId: '1', projectName: 'Madinaty', areaId: '1', areaName: 'New Cairo', unitNumber: 'B7-205', type: '3 BR', size: 185, price: 4500000, ownerName: 'Khaled Mansour', ownerPhone: '+20 100 111 2222', photos: [], status: 'available', createdAt: new Date('2024-01-12') },
-  { id: '2', projectId: '2', projectName: 'Palm Hills October', areaId: '2', areaName: '6th of October', unitNumber: 'V-42', type: 'Villa', size: 320, price: 12000000, ownerName: 'Amira El-Sayed', ownerPhone: '+20 112 333 4444', photos: [], status: 'available', createdAt: new Date('2024-01-11') },
-  { id: '3', projectId: '3', projectName: 'Mountain View iCity', areaId: '1', areaName: 'New Cairo', unitNumber: 'C3-108', type: '2 BR', size: 140, price: 3200000, ownerName: 'Omar Siddiqui', ownerPhone: '+20 101 555 6666', photos: [], status: 'reserved', createdAt: new Date('2024-01-10') },
-  { id: '4', projectId: '4', projectName: 'Zed Towers', areaId: '3', areaName: 'Sheikh Zayed', unitNumber: 'T1-1802', type: 'Penthouse', size: 280, price: 18500000, ownerName: 'Nadia Fouad', ownerPhone: '+20 115 777 8888', photos: [], status: 'available', createdAt: new Date('2024-01-09') },
-  { id: '5', projectId: '5', projectName: 'Marassi', areaId: '5', areaName: 'North Coast', unitNumber: 'CH-15', type: 'Chalet', size: 150, price: 6500000, ownerName: 'Hassan Ahmed', ownerPhone: '+20 100 999 0000', photos: [], status: 'available', createdAt: new Date('2024-01-08') },
+  { id: '1', projectId: '1', projectName: 'Madinaty', areaId: '1', areaName: 'New Cairo', unitNumber: 'B7-205', type: '3 BR', size: 185, price: 4500000, pricePerMeter: 24324, paymentPlan: { type: 'installment', downPaymentPercent: 20, installmentYears: 8 }, ownerName: 'Khaled Mansour', ownerPhone: '+20 100 111 2222', photos: [], status: 'available', createdAt: new Date('2024-01-12') },
+  { id: '2', projectId: '2', projectName: 'Palm Hills October', areaId: '2', areaName: '6th of October', unitNumber: 'V-42', type: 'Villa', size: 320, price: 12000000, pricePerMeter: 37500, paymentPlan: { type: 'cash' }, ownerName: 'Amira El-Sayed', ownerPhone: '+20 112 333 4444', photos: [], status: 'available', createdAt: new Date('2024-01-11') },
+  { id: '3', projectId: '3', projectName: 'Mountain View iCity', areaId: '1', areaName: 'New Cairo', unitNumber: 'C3-108', type: '2 BR', size: 140, price: 3200000, pricePerMeter: 22857, paymentPlan: { type: 'installment', downPaymentPercent: 15, installmentYears: 6 }, ownerName: 'Omar Siddiqui', ownerPhone: '+20 101 555 6666', photos: [], status: 'reserved', createdAt: new Date('2024-01-10') },
+  { id: '4', projectId: '4', projectName: 'Zed Towers', areaId: '3', areaName: 'Sheikh Zayed', unitNumber: 'T1-1802', type: 'Penthouse', size: 280, price: 18500000, pricePerMeter: 66071, paymentPlan: { type: 'installment', downPaymentPercent: 25, installmentYears: 10 }, ownerName: 'Nadia Fouad', ownerPhone: '+20 115 777 8888', photos: [], status: 'available', createdAt: new Date('2024-01-09') },
+  { id: '5', projectId: '5', projectName: 'Marassi', areaId: '5', areaName: 'North Coast', unitNumber: 'CH-15', type: 'Chalet', size: 150, price: 6500000, pricePerMeter: 43333, paymentPlan: { type: 'cash' }, ownerName: 'Hassan Ahmed', ownerPhone: '+20 100 999 0000', photos: [], status: 'available', createdAt: new Date('2024-01-08') },
 ];
 
 export function DataProvider({ children }: { children: ReactNode }) {
@@ -162,13 +162,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   // Unit actions
-  const addUnit = (unit: Omit<Unit, 'id' | 'createdAt' | 'areaId' | 'areaName' | 'projectName'> & { projectId: string }) => {
+  const addUnit = (unit: Omit<Unit, 'id' | 'createdAt' | 'areaId' | 'areaName' | 'projectName' | 'pricePerMeter'> & { projectId: string }) => {
     const project = projects.find(p => p.id === unit.projectId);
+    const pricePerMeter = unit.size > 0 ? Math.round(unit.price / unit.size) : 0;
     const newUnit: Unit = {
       ...unit,
       projectName: project?.name || '',
       areaId: project?.areaId || '',
       areaName: project?.areaName || '',
+      pricePerMeter,
       id: Date.now().toString(),
       createdAt: new Date(),
     };

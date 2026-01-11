@@ -45,6 +45,14 @@ export interface Area {
   createdAt: Date;
 }
 
+export type PaymentType = 'cash' | 'installment';
+
+export interface PaymentPlan {
+  type: PaymentType;
+  downPaymentPercent?: number; // Only for installment
+  installmentYears?: number; // Only for installment
+}
+
 export interface Unit {
   id: string;
   projectId: string;
@@ -54,7 +62,9 @@ export interface Unit {
   unitNumber: string;
   type: string;
   size: number;
-  price: number;
+  price: number; // Total price
+  pricePerMeter?: number; // Calculated: price / size
+  paymentPlan: PaymentPlan;
   ownerName: string;
   ownerPhone: string;
   photos: string[];

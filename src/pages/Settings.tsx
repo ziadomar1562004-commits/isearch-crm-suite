@@ -43,7 +43,7 @@ export default function Settings() {
     phone: '+20 ',
   });
 
-  // Only admins can access settings
+  // Only admins can access settings (sales cannot access)
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
