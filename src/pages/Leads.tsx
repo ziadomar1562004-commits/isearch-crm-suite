@@ -26,12 +26,13 @@ import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Edit2 } from 'lucide-react';
+import { MessageCircle, Edit2, EyeOff } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { maskPhoneNumber, canViewLeadPhone } from '@/lib/privacy';
 
 export default function Leads() {
   const { leads, areas, projects, getProjectsByArea, addLead, updateLead } = useData();
@@ -115,7 +116,27 @@ export default function Leads() {
 
   const columns = [
     { header: 'Name', accessor: 'name' as const },
-    { header: 'Phone', accessor: 'phone' as const },
+    {
+      header: 'Phone',
+      accessor: (lead: Lead) => {
+        const canView = canViewLeadPhone(isAdmin, currentUser?.id, lead.assignedTo);
+        return canView ? (
+          lead.phone
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-muted-foreground flex items-center gap-1 cursor-help">
+                <EyeOff className="h-3 w-3" />
+                {maskPhoneNumber(lead.phone)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Phone hidden - Not your assigned lead</p>
+            </TooltipContent>
+          </Tooltip>
+        );
+      },
+    },
     { header: 'Area', accessor: 'areaName' as const },
     { header: 'Project', accessor: 'projectName' as const },
     { header: 'Source', accessor: 'source' as const },
@@ -140,46 +161,51 @@ export default function Leads() {
     },
     {
       header: 'Actions',
-      accessor: (lead: Lead) => (
-        <div className="flex items-center gap-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleWhatsAppClick(lead.phone);
-                }}
-              >
-                <MessageCircle className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Contact via WhatsApp</p>
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEditStatus(lead);
-                }}
-              >
-                <Edit2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Change Status</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      ),
+      accessor: (lead: Lead) => {
+        const canView = canViewLeadPhone(isAdmin, currentUser?.id, lead.assignedTo);
+        return (
+          <div className="flex items-center gap-1">
+            {canView && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleWhatsAppClick(lead.phone);
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Contact via WhatsApp</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditStatus(lead);
+                  }}
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Change Status</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        );
+      },
     },
   ];
 

@@ -24,16 +24,19 @@ import { Unit, PaymentType } from '@/types/crm';
 import { useToast } from '@/hooks/use-toast';
 import { useConfig } from '@/contexts/ConfigContext';
 import { useData } from '@/contexts/DataContext';
-import { ImagePlus, X, Image, MapPin, Banknote, CreditCard } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { ImagePlus, X, Image, MapPin, Banknote, CreditCard, EyeOff } from 'lucide-react';
 import { UnitMap } from '@/components/UnitMap';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { maskPhoneNumber, canViewUnitPhone } from '@/lib/privacy';
 
 export default function Units() {
   const { units, projects, areas, addUnit, updateUnit } = useData();
+  const { currentUser, isAdmin } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPhotosDialogOpen, setIsPhotosDialogOpen] = useState(false);
   const [isMapDialogOpen, setIsMapDialogOpen] = useState(false);
@@ -151,6 +154,27 @@ export default function Units() {
     },
     { header: 'Owner', accessor: 'ownerName' as const },
     {
+      header: 'Owner Phone',
+      accessor: (unit: Unit) => {
+        const canView = canViewUnitPhone(isAdmin, currentUser?.id, unit.addedBy);
+        return canView ? (
+          unit.ownerPhone
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-muted-foreground flex items-center gap-1 cursor-help">
+                <EyeOff className="h-3 w-3" />
+                {maskPhoneNumber(unit.ownerPhone)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Phone hidden - Not your added unit</p>
+            </TooltipContent>
+          </Tooltip>
+        );
+      },
+    },
+    {
       header: 'Photos',
       accessor: (unit: Unit) => (
         <Button
@@ -241,6 +265,7 @@ export default function Units() {
       status: formData.status,
       photos: formData.photos,
       location: formData.location,
+      addedBy: currentUser?.id, // Track who added this unit
     });
     setIsDialogOpen(false);
     setFormData({

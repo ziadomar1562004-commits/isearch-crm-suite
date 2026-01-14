@@ -70,6 +70,7 @@ export interface Unit {
   photos: string[];
   status: 'available' | 'reserved' | 'sold';
   createdAt: Date;
+  addedBy?: string; // User ID who added this unit
   location?: {
     lat: number;
     lng: number;
