@@ -24,7 +24,7 @@ interface DataContextType {
   deleteArea: (id: string) => void;
   
   // Unit actions
-  addUnit: (unit: Omit<Unit, 'id' | 'createdAt' | 'areaId' | 'areaName' | 'projectName' | 'pricePerMeter'> & { projectId: string }) => void;
+  addUnit: (unit: Omit<Unit, 'id' | 'createdAt' | 'areaId' | 'areaName' | 'projectName' | 'pricePerMeter'> & { projectId: string; addedBy?: string }) => void;
   updateUnit: (id: string, unit: Partial<Unit>) => void;
   deleteUnit: (id: string) => void;
   
