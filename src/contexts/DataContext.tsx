@@ -162,7 +162,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   // Unit actions
-  const addUnit = (unit: Omit<Unit, 'id' | 'createdAt' | 'areaId' | 'areaName' | 'projectName' | 'pricePerMeter'> & { projectId: string }) => {
+  const addUnit = (unit: Omit<Unit, 'id' | 'createdAt' | 'areaId' | 'areaName' | 'projectName' | 'pricePerMeter'> & { projectId: string; addedBy?: string }) => {
     const project = projects.find(p => p.id === unit.projectId);
     const pricePerMeter = unit.size > 0 ? Math.round(unit.price / unit.size) : 0;
     const newUnit: Unit = {
