@@ -9,14 +9,26 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useConfig } from '@/contexts/ConfigContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, X, Users, Tag, Home, UserPlus } from 'lucide-react';
+import { Plus, X, Users, Tag, Home, UserPlus, Edit, Ban, UserCheck } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
+import { User } from '@/types/crm';
 
 export default function Settings() {
   const { currentUser, isAdmin } = useAuth();
@@ -29,6 +41,7 @@ export default function Settings() {
     addUnitType,
     removeUnitType,
     addSalesRep,
+    updateSalesRep,
     removeSalesRep,
     toggleSalesRepStatus,
   } = useConfig();
@@ -37,10 +50,19 @@ export default function Settings() {
   const [newSource, setNewSource] = useState('');
   const [newType, setNewType] = useState('');
   const [isSalesDialogOpen, setIsSalesDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isBanDialogOpen, setIsBanDialogOpen] = useState(false);
+  const [selectedSalesRep, setSelectedSalesRep] = useState<User | null>(null);
   const [salesForm, setSalesForm] = useState({
     name: '',
     email: '',
     phone: '+20 ',
+    password: '',
+  });
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
   });
 
   // Only admins can access settings (sales cannot access)
@@ -66,6 +88,10 @@ export default function Settings() {
 
   const handleAddSalesRep = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!salesForm.password || salesForm.password.length < 6) {
+      toast({ title: 'Password must be at least 6 characters', variant: 'destructive' });
+      return;
+    }
     addSalesRep({
       name: salesForm.name,
       email: salesForm.email,
@@ -73,9 +99,53 @@ export default function Settings() {
       role: 'sales',
       isActive: true,
     });
+    // Note: In a real app, you'd store the password securely in a backend
     setIsSalesDialogOpen(false);
-    setSalesForm({ name: '', email: '', phone: '+20 ' });
-    toast({ title: 'Sales rep added' });
+    setSalesForm({ name: '', email: '', phone: '+20 ', password: '' });
+    toast({ title: 'Sales account created successfully' });
+  };
+
+  const handleEditSalesRep = (rep: User) => {
+    setSelectedSalesRep(rep);
+    setEditForm({
+      name: rep.name,
+      email: rep.email,
+      phone: rep.phone,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedSalesRep) {
+      updateSalesRep(selectedSalesRep.id, {
+        name: editForm.name,
+        email: editForm.email,
+        phone: editForm.phone,
+      });
+      setIsEditDialogOpen(false);
+      setSelectedSalesRep(null);
+      toast({ title: 'Sales account updated' });
+    }
+  };
+
+  const handleBanClick = (rep: User) => {
+    setSelectedSalesRep(rep);
+    setIsBanDialogOpen(true);
+  };
+
+  const handleConfirmBan = () => {
+    if (selectedSalesRep) {
+      toggleSalesRepStatus(selectedSalesRep.id);
+      toast({ 
+        title: selectedSalesRep.isActive ? 'Account banned' : 'Account restored',
+        description: selectedSalesRep.isActive 
+          ? `${selectedSalesRep.name} can no longer access the system`
+          : `${selectedSalesRep.name} can now access the system`
+      });
+      setIsBanDialogOpen(false);
+      setSelectedSalesRep(null);
+    }
   };
 
   return (
@@ -182,11 +252,11 @@ export default function Settings() {
               </div>
               <Button onClick={() => setIsSalesDialogOpen(true)} size="sm" className="gap-1">
                 <UserPlus className="h-4 w-4" />
-                Add Sales Rep
+                Create Sales Account
               </Button>
             </div>
             <CardDescription>
-              Manage your sales team members
+              Create and manage sales accounts
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -194,26 +264,49 @@ export default function Settings() {
               {salesReps.map((rep) => (
                 <div
                   key={rep.id}
-                  className="flex items-center justify-between rounded-lg border bg-card p-3"
+                  className={`flex items-center justify-between rounded-lg border p-3 ${
+                    !rep.isActive ? 'bg-muted/50 opacity-75' : 'bg-card'
+                  }`}
                 >
-                  <div>
-                    <p className="font-medium text-sm">{rep.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{rep.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{rep.email}</p>
                     <p className="text-xs text-muted-foreground">{rep.phone}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 ml-2">
                     <Badge
-                      variant={rep.isActive ? 'default' : 'secondary'}
-                      className="cursor-pointer"
-                      onClick={() => toggleSalesRepStatus(rep.id)}
+                      variant={rep.isActive ? 'default' : 'destructive'}
+                      className="text-xs"
                     >
-                      {rep.isActive ? 'Active' : 'Inactive'}
+                      {rep.isActive ? 'Active' : 'Banned'}
                     </Badge>
-                    <button
-                      onClick={() => removeSalesRep(rep.id)}
-                      className="rounded p-1 hover:bg-destructive/10 text-destructive"
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleEditSalesRep(rep)}
+                      title="Edit account"
                     >
-                      <X className="h-4 w-4" />
-                    </button>
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-7 w-7 ${rep.isActive ? 'text-destructive hover:text-destructive' : 'text-green-600 hover:text-green-600'}`}
+                      onClick={() => handleBanClick(rep)}
+                      title={rep.isActive ? 'Ban account' : 'Restore account'}
+                    >
+                      {rep.isActive ? <Ban className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => removeSalesRep(rep.id)}
+                      title="Delete account"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -222,19 +315,23 @@ export default function Settings() {
         </Card>
       </div>
 
-      {/* Add Sales Rep Dialog */}
+      {/* Create Sales Account Dialog */}
       <Dialog open={isSalesDialogOpen} onOpenChange={setIsSalesDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Sales Representative</DialogTitle>
+            <DialogTitle>Create Sales Account</DialogTitle>
+            <DialogDescription>
+              Create a new sales account. The user will use these credentials to log in.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddSalesRep} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">Full Name</Label>
               <Input
                 id="name"
                 value={salesForm.name}
                 onChange={(e) => setSalesForm({ ...salesForm, name: e.target.value })}
+                placeholder="Enter full name"
                 required
               />
             </div>
@@ -245,6 +342,7 @@ export default function Settings() {
                 type="email"
                 value={salesForm.email}
                 onChange={(e) => setSalesForm({ ...salesForm, email: e.target.value })}
+                placeholder="sales@company.com"
                 required
               />
             </div>
@@ -258,15 +356,100 @@ export default function Settings() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={salesForm.password}
+                onChange={(e) => setSalesForm({ ...salesForm, password: e.target.value })}
+                placeholder="Min 6 characters"
+                required
+              />
+            </div>
             <div className="flex justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={() => setIsSalesDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Add Sales Rep</Button>
+              <Button type="submit">Create Account</Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Sales Account Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Sales Account</DialogTitle>
+            <DialogDescription>
+              Update the sales account information.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSaveEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Full Name</Label>
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Phone</Label>
+              <Input
+                id="edit-phone"
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save Changes</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ban/Restore Confirmation Dialog */}
+      <AlertDialog open={isBanDialogOpen} onOpenChange={setIsBanDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {selectedSalesRep?.isActive ? 'Ban Account' : 'Restore Account'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedSalesRep?.isActive 
+                ? `Are you sure you want to ban ${selectedSalesRep?.name}? They will no longer be able to log in to the system.`
+                : `Are you sure you want to restore ${selectedSalesRep?.name}'s access? They will be able to log in again.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmBan}
+              className={selectedSalesRep?.isActive ? 'bg-destructive hover:bg-destructive/90' : ''}
+            >
+              {selectedSalesRep?.isActive ? 'Ban Account' : 'Restore Account'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
