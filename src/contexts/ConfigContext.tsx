@@ -10,6 +10,7 @@ interface ConfigContextType {
   addUnitType: (label: string) => void;
   removeUnitType: (id: string) => void;
   addSalesRep: (user: Omit<User, 'id' | 'createdAt'>) => void;
+  updateSalesRep: (id: string, updates: Partial<Omit<User, 'id' | 'createdAt'>>) => void;
   removeSalesRep: (id: string) => void;
   toggleSalesRepStatus: (id: string) => void;
 }
@@ -149,6 +150,14 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const updateSalesRep = (id: string, updates: Partial<Omit<User, 'id' | 'createdAt'>>) => {
+    saveSalesReps(
+      salesReps.map((r) =>
+        r.id === id ? { ...r, ...updates } : r
+      )
+    );
+  };
+
   return (
     <ConfigContext.Provider
       value={{
@@ -160,6 +169,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         addUnitType,
         removeUnitType,
         addSalesRep,
+        updateSalesRep,
         removeSalesRep,
         toggleSalesRepStatus,
       }}
